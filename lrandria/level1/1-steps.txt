@@ -1,0 +1,62 @@
+1. ssh level1@localhost -p 4243
+
+2. GCC stack protector support:            Enabled
+  Strict user copy checks:                Disabled
+  Restrict /dev/mem access:               Enabled
+  Restrict /dev/kmem access:              Enabled
+  grsecurity / PaX: No GRKERNSEC
+  Kernel Heap Hardening: No KERNHEAP
+ System-wide ASLR (kernel.randomize_va_space): Off (Setting: 0)
+RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH      FILE
+No RELRO        No canary found   NX disabled   No PIE          No RPATH   No RUNPATH   /home/user/level1/level1
+
+3. ls -la
+total 17
+dr-xr-x---+ 1 level1 level1   80 Mar  6  2016 .
+dr-x--x--x  1 root   root    340 Sep 23  2015 ..
+-rw-r--r--  1 level1 level1  220 Apr  3  2012 .bash_logout
+-rw-r--r--  1 level1 level1 3530 Sep 23  2015 .bashrc
+-rwsr-s---+ 1 level2 users  5138 Mar  6  2016 level1
+-rw-r--r--+ 1 level1 level1   65 Sep 23  2015 .pass
+-rw-r--r--  1 level1 level1  675 Apr  3  2012 .profile
+
+///TESTS THAT DID NOT WORK///
+4. level1@RainFall:~$ ./level1
+[takes input]
+
+5. level1@RainFall:~$ ./level1 cacaprout
+[takes input]
+
+6. level1@RainFall:~$ ./level1 caca prout
+[takes input]
+////////////////////////////
+
+7. level1@RainFall:~$ ./level1
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+Segmentation fault (core dumped)
+
+8. Open new terminal + scp -P 4243 level1@localhost:/home/user/level1/level1 .
+
+9. https://dogbolt.org/ => See .c file.
+It only calls gets(), with a declared buffer of 64 bytes. There is an unused function that makes a system call to /bin/sh.
+
+10. (Read doc about buffer overflows).
+We will craft a payload: how big should it be? What will it contain?
+First, find the offset. It is the size of the buffer + additional bytes that must be overwritten.
+Pad it with random characters and add the address of the 'run' function so we can jump to it.
+You will need to understand what is EIP (Instruction Pointer).
+
+11. gdb level1:
+- layout asm
+- disas main
+- disas run
+- place breakpoints (main, gets, run)
+- get the value and location of EIP + address of start of the buffer to exploit, and do subtraction to get the offset
+Some commands:
+- run, next etc...
+- x/2xw $esp
+- p/d (EIP) - (start of buffer)
+
+/PAS FINI\
+
+FLAG 2: 53a4a712787f40ec66c3c26c1f4b164dcad5552b038bb0addd69bf5bf6fa8e77

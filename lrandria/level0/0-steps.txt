@@ -1,0 +1,54 @@
+1. ssh level0@localhost -p 4243
+
+2. GCC stack protector support:            Enabled
+  Strict user copy checks:                Disabled
+  Restrict /dev/mem access:               Enabled
+  Restrict /dev/kmem access:              Enabled
+  grsecurity / PaX: No GRKERNSEC
+  Kernel Heap Hardening: No KERNHEAP
+ System-wide ASLR (kernel.randomize_va_space): Off (Setting: 0)
+RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH      FILE
+No RELRO        No canary found   NX enabled    No PIE          No RPATH   No RUNPATH   /home/user/level0/level0
+
+3. ls -la
+total 737
+dr-xr-x---+ 1 level0 level0     60 Mar  6  2016 .
+dr-x--x--x  1 root   root      340 Sep 23  2015 ..
+-rw-r--r--  1 level0 level0    220 Apr  3  2012 .bash_logout
+-rw-r--r--  1 level0 level0   3530 Sep 23  2015 .bashrc
+-rwsr-x---+ 1 level1 users  747441 Mar  6  2016 level0
+-rw-r--r--  1 level0 level0    675 Apr  3  2012 .profile
+
+///TESTS THAT DID NOT WORK///
+4. level0@RainFall:~$ ./level0
+Segmentation fault (core dumped)
+
+5. level0@RainFall:~$ ./level0 cacaprout
+No !
+
+6. level0@RainFall:~$ ./level0 caca prout
+No !
+////////////////////////////
+
+7. Open new terminal + scp -P 4243 level0@localhost:/home/user/level0/level0 .
+
+8. https://dogbolt.org/ => could not decompile, except with snowman. See .c file.
+It opens a shell under some conditions.
+
+9. CODE SNIPPET [
+    v2 = v3->f4;
+    eax4 = atoi(v2);
+    if (!reinterpret_cast<int1_t>(eax4 == 0x1a7)) {
+        eax5 = _IO_stderr;
+        fwrite(ecx, "No !\n", 1, 5, eax5);
+    }
+]
+atoi() is used on first argument passed to the program. It seems to compare the result with 0x147.
+
+10. https://www.binaryhexconverter.com/ 
+0x147 = 423
+
+11. ./level0 423
+cat /home/user/level1/.pass
+
+FLAG 1: 1fe8a524fa4bec01ca4ea2a869af2a02260d4a7d5fe7e7c24d8617e6dca12d3a
