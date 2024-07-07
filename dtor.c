@@ -1,18 +1,40 @@
 
+#include <stdio.h>
 
-void nikzebi()
+typedef struct mem
 {
-	printf("I am a nikzebi hehe acab\n");
+	char	index;
+	char	*data;
+}	t_arg;
+
+t_arg	*mem_create(int id)
+{
+	t_arg	*mem;
+
+	mem = malloc(8);
+	mem->index = id;
+	mem->data = malloc(8);
+	return (mem);
+
 }
 
-void DD()
-{
-	printf("LA DEUX\n");
-}
+char	c[80];
 
-int main()
+int main(int argc, char **argv)
 {
-	atexit(&nikzebi);
-	atexit(&DD);
+	FILE	*file;
+	t_arg	*arg1;
+	t_arg	*arg2;
+
+	arg1 = mem_create(1);
+	arg2 = mem_create(2);
+
+	strcpy(arg1->data, argv[1]);
+	strcpy(arg2->data, argv[2]);
+
+	file = fopen("/home/user/level8/.pass", "r");
+	fgets(c, 8, file);
+	
+	puts("~~");
 	return (0);
 }
