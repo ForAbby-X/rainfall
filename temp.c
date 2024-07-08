@@ -16,3 +16,4 @@ void main(void)
   gets(local_50);
   return;
 }
+

